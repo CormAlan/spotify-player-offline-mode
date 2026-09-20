@@ -61,6 +61,9 @@ pub struct AppConfig {
     pub login_redirect_uri: String,
 
     pub log_folder: Option<PathBuf>,
+    /// Persistent downloaded audio and album covers, separate from disposable caches.
+    pub download_folder: Option<PathBuf>,
+    pub offline_fallback: bool,
 
     pub player_event_hook_command: Option<Command>,
 
@@ -317,6 +320,8 @@ impl Default for AppConfig {
             login_redirect_uri: "http://127.0.0.1:8989/login".to_string(),
 
             log_folder: None,
+            download_folder: None,
+            offline_fallback: true,
 
             tracks_playback_limit: 50,
             top_tracks_limit: 100,

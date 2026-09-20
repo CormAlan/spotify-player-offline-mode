@@ -259,6 +259,53 @@ After changing the client ID, re-run `spotify_player authenticate` to refresh th
 
 ## Features
 
+### Offline downloads (this fork)
+
+Download tracks, albums or playlists while connected, including album covers, then
+play them without Spotify API, authentication, audio-key, or image requests:
+
+```sh
+spotify_player downloads add 'https://open.spotify.com/playlist/PLAYLIST_ID'
+spotify_player downloads add 'spotify:track:TRACK_ID'
+spotify_player --offline
+spotify_player downloads play 'https://open.spotify.com/playlist/PLAYLIST_ID'
+spotify_player downloads list
+spotify_player downloads verify
+spotify_player downloads remove 'spotify:track:TRACK_ID'
+```
+
+Replace the placeholders with real Spotify IDs. Multiple URLs/URIs can be passed
+to `downloads add`. Completed tracks are skipped on reruns; missing or corrupt
+artwork is repaired. Use `--force` to replace downloaded audio. Downloads are
+sequential, with a short delay between tracks, to avoid request bursts. Track
+downloads use librespot directly; resolving albums/playlists still uses the Web API.
+
+The offline player supports selection (`j`/`k` or arrows), play (`Enter`),
+pause/resume (`Space`), next/previous (`n`/`p`), seek (`Left`/`Right`), volume
+(`+`/`-`), and quit (`q`). It starts paused. Album and playlist downloads retain
+their track order. Artwork uses terminal half-block rendering, including in
+terminals without an image protocol. Build with `--features image` to display it;
+all streaming builds download and retain artwork regardless of display support.
+
+Downloads live in the OS data directory (`~/.local/share/spotify-player/downloads`
+on Linux), separate from the disposable streaming cache. Set `download_folder`
+in `app.toml` to override it. Audio remains encrypted on disk; each owner-only
+download file contains its playback key and metadata. Keep this directory private.
+Files are checked for completeness and checksummed, then committed atomically.
+Interrupted downloads never replace a valid download. Album covers are deduplicated
+by URL; removing a track retains shared covers.
+
+When downloads exist and online startup fails or exceeds 15 seconds, the interactive
+app opens the offline library. Set `offline_fallback = false` to disable this.
+`--offline` skips online startup entirely, including login prompts. This fallback
+does **not** switch an already-running streaming session mid-song. Offline mode
+has its own local queue and controls; Spotify Connect, online search, the normal
+CLI playback socket and media-key integration do not control it. Downloading
+requires Spotify Premium and successful online authentication. This is an
+experimental independent implementation, not Spotify's official offline mode.
+
+See [the offline design and validation notes](docs/offline.md).
+
 ### Spotify Connect
 
 Control Spotify remotely with [Spotify Connect](https://support.spotify.com/us/article/spotify-connect/). Press **D** to list devices, then **enter** to connect.
