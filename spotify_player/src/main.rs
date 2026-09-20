@@ -3,6 +3,8 @@ mod cli;
 mod client;
 mod command;
 mod config;
+#[cfg(feature = "streaming")]
+mod downloads;
 mod event;
 mod key;
 mod log_layer;
@@ -108,13 +110,42 @@ async fn start_app(state: &state::SharedState) -> Result<()> {
     }
 
     // create a Spotify API client
-    let client = client::AppClient::new()
-        .await
-        .context("construct app client")?;
-    client
-        .new_session(Some(state), true)
-        .await
-        .context("initialize new Spotify session")?;
+    let connect = async {
+        let client = client::AppClient::new()
+            .await
+            .context("construct app client")?;
+        client
+            .new_session(Some(state), true)
+            .await
+            .context("initialize new Spotify session")?;
+        Ok::<_, anyhow::Error>(client)
+    };
+    #[cfg(feature = "streaming")]
+    let client = if !state.is_daemon
+        && config::get_config().app_config.offline_fallback
+        && downloads::has_downloads()
+    {
+        match tokio::time::timeout(std::time::Duration::from_secs(15), connect).await {
+            Ok(Ok(client)) => client,
+            result => {
+                let reason = match result {
+                    Ok(Err(err)) => {
+                        format!("Spotify unavailable: {err:#}. Playing from downloads.")
+                    }
+                    _ => "Spotify connection timed out. Playing from downloads.".to_owned(),
+                };
+                tracing::warn!("{reason}");
+                return downloads::play(
+                    None,
+                    Some("Spotify is unavailable. Choose a downloaded track to play."),
+                );
+            }
+        }
+    } else {
+        connect.await?
+    };
+    #[cfg(not(feature = "streaming"))]
+    let client = connect.await?;
 
     // request user data
     client_pub.send(client::ClientRequest::GetCurrentUser)?;
@@ -233,6 +264,16 @@ fn main() -> Result<()> {
 
     // parse command line arguments
     let args = cli::init_cli()?.get_matches();
+    #[cfg(feature = "streaming")]
+    anyhow::ensure!(
+        !args.get_flag("offline") || args.subcommand().is_none(),
+        "--offline cannot be combined with a subcommand"
+    );
+    #[cfg(all(feature = "streaming", feature = "daemon"))]
+    anyhow::ensure!(
+        !args.get_flag("offline") || !args.get_flag("daemon"),
+        "--offline is an interactive player and cannot run as a daemon"
+    );
 
     // initialize the application's cache and config folders
     let config_folder: std::path::PathBuf = args
@@ -277,6 +318,10 @@ fn main() -> Result<()> {
 
     match args.subcommand() {
         None => {
+            #[cfg(feature = "streaming")]
+            if args.get_flag("offline") {
+                return downloads::play(None, None);
+            }
             // initialize the application's log
             let log_folder = config::get_config()
                 .app_config
@@ -320,6 +365,8 @@ fn main() -> Result<()> {
             let state = std::sync::Arc::new(state::State::new(is_daemon, log_buffer));
             start_app(&state)
         }
+        #[cfg(feature = "streaming")]
+        Some(("downloads", args)) => downloads::handle(args),
         Some((cmd, args)) => cli::handle_cli_subcommand(cmd, args),
     }
 }

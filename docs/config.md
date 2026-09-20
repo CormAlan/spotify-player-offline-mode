@@ -36,6 +36,8 @@ spotify_player -o device.volume=80 -o theme=dracula
 | `login_redirect_uri`              | Redirect URI for authentication.                                                                    | `http://127.0.0.1:8989/login`                                          |
 | `client_port`                     | Port for the application's client to handle CLI commands.                                           | `8080`                                                                 |
 | `log_folder`                      | Path to store log files.                                                                            | `None`                                                                 |
+| `download_folder`                 | Persistent offline downloads and artwork directory (requires `streaming`). Absolute paths recommended. | OS data directory + `spotify-player/downloads` |
+| `offline_fallback`                | Open the offline library if interactive online startup fails or exceeds 15 seconds and downloads exist. Does not switch mid-stream. | `true` |
 | `tracks_playback_limit`           | Maximum number of tracks in a playback session.                                                     | `50`                                                                   |
 | `top_tracks_limit`                | Maximum number of tracks returned on the user's top tracks page.                                    | `100`                                                                  |
 | `playback_format`                 | Format string for the playback window.                                                              | `{status} {track} • {artists} {liked}\n{album} • {genres}\n{metadata}` |

@@ -166,7 +166,7 @@ pub fn init_cli() -> anyhow::Result<clap::Command> {
     let default_config_folder = config::get_config_folder_path()?;
 
     let cmd = clap::Command::new(env!("CARGO_PKG_NAME"))
-        .version(env!("CARGO_PKG_VERSION"))
+        .version(concat!(env!("CARGO_PKG_VERSION"), "-offline.1"))
         .about(env!("CARGO_PKG_DESCRIPTION"))
         .author(env!("CARGO_PKG_AUTHORS"))
         .subcommand(commands::init_get_subcommand())
@@ -218,6 +218,14 @@ pub fn init_cli() -> anyhow::Result<clap::Command> {
             .long("daemon")
             .action(clap::ArgAction::SetTrue)
             .help("Running the application as a daemon"),
+    );
+
+    #[cfg(feature = "streaming")]
+    let cmd = cmd.subcommand(crate::downloads::command()).arg(
+        clap::Arg::new("offline")
+            .long("offline")
+            .action(clap::ArgAction::SetTrue)
+            .help("Play downloaded tracks and artwork without connecting to Spotify"),
     );
 
     Ok(cmd)

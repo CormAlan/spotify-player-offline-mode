@@ -19,6 +19,9 @@ librespot-connect = { version = "0.8.0", optional = true }
 librespot-core = { version = "0.8.0" }
 librespot-playback = {version = "0.8.0", optional = true, default-features = false, features = ["native-tls"]}
 librespot-metadata = { version = "0.8.0" }
+librespot-audio = { version = "0.8.0", optional = true }
+symphonia = { version = "0.5.5", optional = true, default-features = false }
+tempfile = "3"
 log = "0.4.34"
 chrono = "0.4.45"
 chrono-humanize = "0.2.3"
@@ -98,7 +101,7 @@ jackaudio-backend = ["streaming", "librespot-playback/jackaudio-backend"]
 rodiojack-backend = ["streaming", "librespot-playback/rodiojack-backend"]
 sdl-backend = ["streaming", "librespot-playback/sdl-backend"]
 gstreamer-backend = ["streaming", "librespot-playback/gstreamer-backend"]
-streaming = ["librespot-playback", "librespot-connect", "rustfft"]
+streaming = ["librespot-playback", "librespot-connect", "librespot-audio", "rustfft", "symphonia"]
 media-control = ["souvlaki", "winit", "windows"]
 image = ["ratatui-image", "dep:image"]
 sixel = ["image"]
